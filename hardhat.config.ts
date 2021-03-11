@@ -12,6 +12,12 @@ import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
+const DEPLOYER = process.env.DEPLOYER || "";
+const DEPLOYER_MNEMONIC = process.env.DEPLOYER_MNEMONIC || "";
+const accounts = {
+  mnemonic: DEPLOYER_MNEMONIC,
+};
+
 const RINKEBY_PRIVATE_KEY =
   process.env.RINKEBY_PRIVATE_KEY! ||
   "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"; // well known private key
@@ -34,6 +40,7 @@ const config: HardhatUserConfig = {
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
+      accounts,
     },
     coverage: {
       url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
@@ -42,6 +49,7 @@ const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: {
       default: 0, // here this will by default take the first account as deployer
+      ropsten: `${DEPLOYER}`,
     },
     r1: {
       default: 1, // here this will by default take the first account as deployer

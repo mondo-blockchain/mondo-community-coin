@@ -1,4 +1,3 @@
-import { Signer } from "crypto";
 import { BigNumber, Contract, ethers } from "ethers";
 
 declare global {
@@ -11,6 +10,7 @@ const mndcAbi = [
   "function name() view returns (string)",
   "function symbol() view returns (string)",
   "function balanceOf(address) view returns (uint)",
+  "function totalBalanceOf(address) view returns (uint)",
   "function transfer(address to, uint amount)",
   "function transferVested(address to, uint amount, uint startDate)",
   "event Transfer(address indexed from, address indexed to, uint amount)",
@@ -20,6 +20,8 @@ type ChainId = number;
 
 const contractAddress: Record<ChainId, string> = {
   31337: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  //   3: "0xa1420a8b662cCF644a426adA5aDE4C4D41C2A4b1",
+  3: "0x1AF97622723fEd5621fc764d0871998d9f2BAE14",
 };
 
 async function connect() {

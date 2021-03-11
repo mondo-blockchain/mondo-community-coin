@@ -8,6 +8,8 @@ import "./access/Ownable.sol";
 import "hardhat/console.sol";
 
 contract ERC20Vested is ERC20, Ownable {
+    event Vesting(address indexed recipient, uint256 value, uint256 startDate);
+
     uint256 constant BASIS_POINT_DIVISOR = 10000;
 
     struct vesting {
@@ -61,6 +63,7 @@ contract ERC20Vested is ERC20, Ownable {
             "ERC20Vested: Recipient already has vesting"
         );
         _vesting[recipient] = vesting(amount, startDate);
+        emit Vesting(recipient, amount, startDate);
         _transfer(_msgSender(), recipient, amount);
     }
 
