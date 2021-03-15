@@ -17,6 +17,11 @@ forward({
 });
 
 forward({
+  from: events.startOwnershipTransferEvent,
+  to: effects.transferOwnershipFx,
+});
+
+forward({
   from: events.connectWeb3Event,
   to: effects.connectToContractFx,
 });
@@ -28,10 +33,15 @@ forward({
 
 forward({
   from: events.contractConnectedEvent,
-  to: effects.fetchBalanceFx,
+  to: [effects.fetchBalanceFx, effects.fetchReserveFx],
 });
 
 forward({
   from: effects.fetchBalanceFx.doneData,
   to: events.balanceRetrievedEvent,
+});
+
+forward({
+  from: effects.fetchReserveFx.doneData,
+  to: events.reserveRetrievedEvent,
 });

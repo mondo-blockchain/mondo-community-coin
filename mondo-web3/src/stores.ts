@@ -10,6 +10,12 @@ const $balance = domain
   })
   .on(events.balanceRetrievedEvent, (_, payload) => O.fromNullable(payload));
 
+const $reserve = domain
+  .createStore<Option<BigNumberish>>(O.none, {
+    name: "reserve",
+  })
+  .on(events.reserveRetrievedEvent, (_, payload) => O.fromNullable(payload));
+
 const $signer = domain
   .createStore<Option<Signer>>(O.none, {
     name: "signer",
@@ -22,29 +28,9 @@ const $contract = domain
   })
   .on(events.contractConnectedEvent, (_, payload) => O.fromNullable(payload));
 
-const $amount = domain
-  .createStore<Option<string>>(O.none, {
-    name: "balance",
-  })
-  .on(events.amountChangedEvent, (_, payload) => O.fromNullable(payload));
-
-const $recipient = domain
-  .createStore<Option<string>>(O.none, {
-    name: "signer",
-  })
-  .on(events.recipientChangedEvent, (_, payload) => O.fromNullable(payload));
-
-const $date = domain
-  .createStore<Option<Date>>(O.none, {
-    name: "date",
-  })
-  .on(events.dateChangedEvent, (_, payload) => O.fromNullable(payload));
-
 export const stores = {
   $balance,
+  $reserve,
   $signer,
   $contract,
-  $amount,
-  $recipient,
-  $date,
 };

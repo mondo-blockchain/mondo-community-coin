@@ -4,6 +4,6 @@ function units(bn: BigNumberish) {
   return ethers.utils.formatUnits(bn);
 }
 
-export const format = {
+export const frmt = {
   units,
 };

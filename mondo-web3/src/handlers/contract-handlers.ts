@@ -1,4 +1,5 @@
 import { BigNumber, Contract, ethers } from "ethers";
+import { OwnershipTransfer } from "../events";
 
 declare global {
   interface Window {
@@ -10,8 +11,10 @@ const mndcAbi = [
   "function name() view returns (string)",
   "function symbol() view returns (string)",
   "function balanceOf(address) view returns (uint)",
+  "function remainingReserve() view returns (uint)",
   "function totalBalanceOf(address) view returns (uint)",
   "function transfer(address to, uint amount)",
+  "function transferOwnership(address newOwner)",
   "function transferVested(address to, uint amount, uint startDate)",
   "event Transfer(address indexed from, address indexed to, uint amount)",
 ];
@@ -47,6 +50,10 @@ async function balanceOf(contract: Contract) {
   return await contract.balanceOf(contract.signer.getAddress());
 }
 
+async function remainingReserve(contract: Contract) {
+  return await contract.remainingReserve();
+}
+
 async function transferVested(params: {
   contract: Contract;
   recipient: string;
@@ -57,8 +64,15 @@ async function transferVested(params: {
   return await contract.transferVested(recipient, amountUnits, startDateUnix);
 }
 
+async function transferOwnership(params: OwnershipTransfer) {
+  const { contract, newOwner } = params;
+  return await contract.transferOwnership(newOwner);
+}
+
 export const contractHandlers = {
   connect,
   balanceOf,
+  remainingReserve,
   transferVested,
+  transferOwnership,
 };
