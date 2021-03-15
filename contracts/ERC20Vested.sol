@@ -75,17 +75,22 @@ contract ERC20Vested is ERC20, Ownable {
         uint256 startDate
     ) public onlyOwner {
         vesting memory vested = _vesting[recipient];
+        address owner = owner();
         require(
             amount > 0,
             "ERC20Vested: Amount vested must be larger than 0."
         );
         require(
             vested.amount == 0,
-            "ERC20Vested: Recipient already has vesting"
+            "ERC20Vested: Recipient already has vesting."
+        );
+        require(
+            recipient != owner,
+            "ERC20Vested: Owner must not have vesting."
         );
         _vesting[recipient] = vesting(amount, startDate);
         emit Vesting(recipient, amount, startDate);
-        _transfer(owner(), recipient, amount);
+        _transfer(owner, recipient, amount);
     }
 
     function _amountAvailable(address from) internal view returns (uint256) {

@@ -94,6 +94,18 @@ describe("ERC20Vested", () => {
   });
 
   describe("vesting", async () => {
+    describe("when receiver is owner", async () => {
+      it("should fail", async () => {
+        const vestedAmount = ONE_TOKEN.mul(1000);
+        expect(
+          contract.transferVested(
+            owner.address,
+            vestedAmount,
+            getUnixTime(new Date())
+          )
+        ).to.be.reverted;
+      });
+    });
     describe("when receiver is vested starting today", async () => {
       const vestedAmount = ONE_TOKEN.mul(1000);
       beforeEach(async () => {
