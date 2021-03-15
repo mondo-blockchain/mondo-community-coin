@@ -7,7 +7,7 @@ import "@nomiclabs/hardhat-waffle";
 import "hardhat-typechain";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
-import "hardhat-gas-reporter";
+// import "hardhat-gas-reporter";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 
@@ -27,9 +27,6 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   solidity: {
     compilers: [{ version: "0.8.1", settings: {} }],
-  },
-  gasReporter: {
-    gasPrice: 80,
   },
   networks: {
     hardhat: {},

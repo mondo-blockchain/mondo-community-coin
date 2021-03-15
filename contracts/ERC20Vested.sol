@@ -25,8 +25,6 @@ contract ERC20Vested is ERC20, Ownable {
 
     using Arrays for uint256[];
 
-    address private _initialAccount;
-
     uint256[] private _vestingDays;
 
     uint256[] private _vestingBasisPoints;
@@ -36,7 +34,6 @@ contract ERC20Vested is ERC20, Ownable {
     constructor(
         string memory name,
         string memory symbol,
-        address initialAccount,
         uint256 totalSupply,
         uint256[] memory vestingDays,
         uint256[] memory vestingBasisPoints
@@ -45,10 +42,27 @@ contract ERC20Vested is ERC20, Ownable {
             vestingDays.length == vestingBasisPoints.length,
             "ERC20Vested: Date array and basis points array have different lengths."
         );
-        _initialAccount = initialAccount;
-        _mint(initialAccount, totalSupply);
+        _mint(owner(), totalSupply);
         _vestingDays = vestingDays;
         _vestingBasisPoints = vestingBasisPoints;
+    }
+
+    function _hasVesting(address account) private view returns (bool) {
+        return _vesting[account].amount > 0;
+    }
+
+    function transferOwnership(address newOwner)
+        public
+        virtual
+        override
+        onlyOwner
+    {
+        require(
+            !_hasVesting(newOwner),
+            "ERC20Vested: New owner must not have vesting."
+        );
+        super.transferOwnership(newOwner);
+        transfer(newOwner, balanceOf(_msgSender()));
     }
 
     function today() public view virtual returns (uint128) {
@@ -62,12 +76,16 @@ contract ERC20Vested is ERC20, Ownable {
     ) public onlyOwner {
         vesting memory vested = _vesting[recipient];
         require(
+            amount > 0,
+            "ERC20Vested: Amount vested must be larger than 0."
+        );
+        require(
             vested.amount == 0,
             "ERC20Vested: Recipient already has vesting"
         );
         _vesting[recipient] = vesting(amount, startDate);
         emit Vesting(recipient, amount, startDate);
-        _transfer(_initialAccount, recipient, amount);
+        _transfer(owner(), recipient, amount);
     }
 
     function _amountAvailable(address from) internal view returns (uint256) {
@@ -119,10 +137,6 @@ contract ERC20Vested is ERC20, Ownable {
         return _amountAvailable(account);
     }
 
-    function remainingReserve() public view virtual returns (uint256) {
-        return super.balanceOf(_initialAccount);
-    }
-
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -137,10 +151,6 @@ contract ERC20Vested is ERC20, Ownable {
                 "ERC20Vested: Only owner is allowed to mint tokens."
             );
         } else {
-            require(
-                _msgSender() != _initialAccount,
-                "ERC20Vested: Initial account is not allowed to transfer tokens."
-            );
             uint256 amountAvailable = _amountAvailable(from);
             require(
                 amountAvailable >= amount,

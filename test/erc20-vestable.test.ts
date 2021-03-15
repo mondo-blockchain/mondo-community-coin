@@ -33,7 +33,7 @@ describe("ERC20Vested", () => {
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
 
-  beforeEach(async () => {
+  const init = async () => {
     const signers = await ethers.getSigners();
 
     [owner, account1, account2] = signers;
@@ -43,16 +43,18 @@ describe("ERC20Vested", () => {
       owner
     )) as ERC20Vested__factory;
     contract = await vestedFactory.deploy(
-      // todayMock.address,
       "Mondo Community Coin",
       "MNDCC",
-      owner.address,
       INITIAL_OWNER_BALANCE,
       VESTING_MONTHS,
       VESTING_BASIS_POINTS
     );
 
     await contract.deployed();
+  };
+
+  beforeEach(async () => {
+    await init();
   });
 
   describe("owner", async () => {
@@ -61,98 +63,127 @@ describe("ERC20Vested", () => {
       expect(initialBalance).to.equal(INITIAL_OWNER_BALANCE);
     });
 
-    describe("when transfers vested tokens to receiver", async () => {
-      describe("when receiver is vested starting today", async () => {
-        const vestedAmount = ONE_TOKEN.mul(1000);
-        beforeEach(async () => {
-          contract.transferVested(
-            account1.address,
-            vestedAmount,
-            getUnixTime(new Date())
-          );
-        });
-        it(`should have 0.5% (50 basis points) of ${bn.readable(
-          vestedAmount
-        )} as balance`, async () => {
-          const recepientBalance = await contract.balanceOf(account1.address);
-          expect(
-            recepientBalance,
-            "Recipient should have only free portion as balance"
-          ).to.eq(basisPointsOf(vestedAmount, 50));
-        });
-        it("should be able to transfer entire free balance", async () => {
-          const senderBalanceBeforeTransfer = await contract.balanceOf(
-            account1.address
-          );
-          await contract
-            .connect(account1)
-            .transfer(account2.address, senderBalanceBeforeTransfer);
-          const senderBalanceAfterTransfer = await contract.balanceOf(
-            account1.address
-          );
-          const recepientBalanceAfterTransfer = await contract.balanceOf(
-            account2.address
-          );
+    describe("when transfers ownership", async () => {
+      describe("when new owner has no vesting", async () => {
+        it("old owner should have 0 balance and new owner entire balance", async () => {
+          const newOwner = account1;
 
-          expect(recepientBalanceAfterTransfer).to.eq(
-            senderBalanceBeforeTransfer
-          );
-          expect(senderBalanceAfterTransfer).to.eq(ZERO);
-        });
-        it("should be able to receive free tokens adding to the balance of own tokens freed from vesting", async () => {
-          const additionalFreeTokens = ONE_TOKEN.mul(20);
-          await contract.transfer(account1.address, additionalFreeTokens);
-          const recepientBalance = await contract.balanceOf(account1.address);
-          expect(
-            recepientBalance,
-            "Recipient should have free portion of vested amount and the additional amount received as balance"
-          ).to.eq(basisPointsOf(vestedAmount, 50).add(additionalFreeTokens));
-        });
-        it("should not be able to transfer more than free balance", async () => {
-          const amountSlightlyAboveFreeBalance = basisPointsOf(
-            vestedAmount,
-            50
-          ).add(1);
-          expect(
-            contract
-              .connect(account1)
-              .transfer(account2.address, amountSlightlyAboveFreeBalance)
-          ).to.be.reverted;
+          await contract.transferOwnership(newOwner.address);
+
+          const oldOwnerBalance = await contract.balanceOf(owner.address);
+          const newOwnerBalance = await contract.balanceOf(newOwner.address);
+
+          expect(oldOwnerBalance).to.eq(ZERO);
+          expect(newOwnerBalance).to.eq(INITIAL_OWNER_BALANCE);
         });
       });
-      11;
-      describe("when receiver is not vested", async () => {
-        describe("when amount below balance", async () => {
-          it("should succeed", async () => {
-            const amount = INITIAL_OWNER_BALANCE.div(4);
-            await contract.transfer(account1.address, amount);
-            const senderBalance = await contract.balanceOf(owner.address);
-            const recepientBalance = await contract.balanceOf(account1.address);
-            expect(
-              recepientBalance,
-              "Recipient should have received full amount."
-            ).to.eq(amount);
-            expect(senderBalance).to.eq(INITIAL_OWNER_BALANCE.sub(amount));
-          });
+      describe("when new owner has already vesting", async () => {
+        it("should fail", async () => {
+          const newOwner = account1;
+
+          await contract.transferVested(
+            newOwner.address,
+            ONE_TOKEN,
+            getUnixTime(new Date())
+          );
+
+          expect(contract.transferOwnership(newOwner.address)).to.be.reverted;
         });
-        describe("when amount equals balance", async () => {
-          it("should succeed", async () => {
-            const amount = INITIAL_OWNER_BALANCE;
-            await contract.transfer(account1.address, amount);
-            const senderBalance = await contract.balanceOf(owner.address);
-            const recepientBalance = await contract.balanceOf(account1.address);
-            expect(
-              recepientBalance,
-              "Recipient should have received full amount."
-            ).to.eq(amount);
-            expect(senderBalance).to.eq(INITIAL_OWNER_BALANCE.sub(amount));
-          });
+      });
+    });
+  });
+
+  describe("vesting", async () => {
+    describe("when receiver is vested starting today", async () => {
+      const vestedAmount = ONE_TOKEN.mul(1000);
+      beforeEach(async () => {
+        await contract.transferVested(
+          account1.address,
+          vestedAmount,
+          getUnixTime(new Date())
+        );
+      });
+      it(`should have 0.5% (50 basis points) of ${ethers.utils.formatUnits(
+        vestedAmount
+      )} as balance`, async () => {
+        const recepientBalance = await contract.balanceOf(account1.address);
+        expect(
+          recepientBalance,
+          "Recipient should have only free portion as balance"
+        ).to.eq(basisPointsOf(vestedAmount, 50));
+      });
+      it("should be able to transfer entire free balance", async () => {
+        const senderBalanceBeforeTransfer = await contract.balanceOf(
+          account1.address
+        );
+        await contract
+          .connect(account1)
+          .transfer(account2.address, senderBalanceBeforeTransfer);
+        const senderBalanceAfterTransfer = await contract.balanceOf(
+          account1.address
+        );
+        const recepientBalanceAfterTransfer = await contract.balanceOf(
+          account2.address
+        );
+
+        expect(recepientBalanceAfterTransfer).to.eq(
+          senderBalanceBeforeTransfer
+        );
+        expect(senderBalanceAfterTransfer).to.eq(ZERO);
+      });
+      it("should be able to receive free tokens adding to the balance of own tokens freed from vesting", async () => {
+        const additionalFreeTokens = ONE_TOKEN.mul(20);
+        await contract.transfer(account1.address, additionalFreeTokens);
+        const recepientBalance = await contract.balanceOf(account1.address);
+        expect(
+          recepientBalance,
+          "Recipient should have free portion of vested amount and the additional amount received as balance"
+        ).to.eq(basisPointsOf(vestedAmount, 50).add(additionalFreeTokens));
+      });
+      it("should not be able to transfer more than free balance", async () => {
+        const amountSlightlyAboveFreeBalance = basisPointsOf(
+          vestedAmount,
+          50
+        ).add(1);
+        expect(
+          contract
+            .connect(account1)
+            .transfer(account2.address, amountSlightlyAboveFreeBalance)
+        ).to.be.reverted;
+      });
+    });
+
+    describe("when receiver is not vested", async () => {
+      describe("when amount below balance", async () => {
+        it("should succeed", async () => {
+          const amount = INITIAL_OWNER_BALANCE.div(4);
+          await contract.transfer(account1.address, amount);
+          const senderBalance = await contract.balanceOf(owner.address);
+          const recepientBalance = await contract.balanceOf(account1.address);
+          expect(
+            recepientBalance,
+            "Recipient should have received full amount."
+          ).to.eq(amount);
+          expect(senderBalance).to.eq(INITIAL_OWNER_BALANCE.sub(amount));
         });
-        describe("when amount above balance", async () => {
-          it("should fail", async () => {
-            const amount = INITIAL_OWNER_BALANCE.add(1);
-            expect(contract.transfer(account1.address, amount)).to.be.reverted;
-          });
+      });
+      describe("when amount equals balance", async () => {
+        it("should succeed", async () => {
+          const amount = INITIAL_OWNER_BALANCE;
+          await contract.transfer(account1.address, amount);
+          const senderBalance = await contract.balanceOf(owner.address);
+          const recepientBalance = await contract.balanceOf(account1.address);
+          expect(
+            recepientBalance,
+            "Recipient should have received full amount."
+          ).to.eq(amount);
+          expect(senderBalance).to.eq(INITIAL_OWNER_BALANCE.sub(amount));
+        });
+      });
+      describe("when amount above balance", async () => {
+        it("should fail", async () => {
+          const amount = INITIAL_OWNER_BALANCE.add(1);
+          expect(contract.transfer(account1.address, amount)).to.be.reverted;
         });
       });
     });
