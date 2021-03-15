@@ -21,15 +21,9 @@ const fetchBalanceFx = domain.createEffect({
   handler: contractHandlers.balanceOf,
 });
 
-const fetchReserveFx = domain.createEffect({
-  name: "fetchReserveFx",
-  handler: contractHandlers.remainingReserve,
-});
-
 export const effects = {
   connectToContractFx,
   fetchBalanceFx,
-  fetchReserveFx,
   transferVestedFx,
   transferOwnershipFx,
 };

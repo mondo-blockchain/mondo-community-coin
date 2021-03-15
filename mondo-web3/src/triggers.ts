@@ -33,15 +33,10 @@ forward({
 
 forward({
   from: events.contractConnectedEvent,
-  to: [effects.fetchBalanceFx, effects.fetchReserveFx],
+  to: [effects.fetchBalanceFx],
 });
 
 forward({
   from: effects.fetchBalanceFx.doneData,
   to: events.balanceRetrievedEvent,
-});
-
-forward({
-  from: effects.fetchReserveFx.doneData,
-  to: events.reserveRetrievedEvent,
 });

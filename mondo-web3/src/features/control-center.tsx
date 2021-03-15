@@ -23,7 +23,7 @@ import { stores } from "../stores";
 import { controlCenter } from "./constrol-center-store";
 
 export const ControlCenter = () => {
-  const reserve = useStore(stores.$reserve);
+  const balance = useStore(stores.$balance);
   const amount = useStore(controlCenter.$amount);
   const recipient = useStore(controlCenter.$recipient);
   const owner = useStore(controlCenter.$owner);
@@ -50,10 +50,10 @@ export const ControlCenter = () => {
                   </Box>
                 </Flex>
                 <Flex direction="row">
-                  <Text color="gray.400">Remaining Reserve:</Text>
+                  <Text color="gray.400">Your balance:</Text>
                   <Text color="whiteAlpha.900" marginX="2">
                     {pipe(
-                      reserve,
+                      balance,
                       O.map(frmt.units),
                       O.getOrElseW(() => "-")
                     )}
@@ -62,7 +62,8 @@ export const ControlCenter = () => {
                 </Flex>
               </Stack>
               <Box rounded={"lg"} bg={"gray.700"} boxShadow={"lg"} p={8}>
-                <HStack
+                <Stack
+                  direction={["column", "row"]}
                   spacing={10}
                   divider={<StackDivider color="gray.200" />}
                   align="start"
@@ -141,7 +142,7 @@ export const ControlCenter = () => {
                       Transfer Ownership
                     </Button>
                   </Stack>
-                </HStack>
+                </Stack>
               </Box>
             </>
           )),

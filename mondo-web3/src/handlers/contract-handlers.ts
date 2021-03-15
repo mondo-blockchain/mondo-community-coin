@@ -11,7 +11,6 @@ const mndcAbi = [
   "function name() view returns (string)",
   "function symbol() view returns (string)",
   "function balanceOf(address) view returns (uint)",
-  "function remainingReserve() view returns (uint)",
   "function totalBalanceOf(address) view returns (uint)",
   "function transfer(address to, uint amount)",
   "function transferOwnership(address newOwner)",
@@ -24,7 +23,7 @@ type ChainId = number;
 const contractAddress: Record<ChainId, string> = {
   31337: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   //   3: "0xa1420a8b662cCF644a426adA5aDE4C4D41C2A4b1",
-  3: "0x1AF97622723fEd5621fc764d0871998d9f2BAE14",
+  3: "0x5be3Eac96B404406256e5411afE0D0ecC282D57d",
 };
 
 async function connect() {
@@ -50,10 +49,6 @@ async function balanceOf(contract: Contract) {
   return await contract.balanceOf(contract.signer.getAddress());
 }
 
-async function remainingReserve(contract: Contract) {
-  return await contract.remainingReserve();
-}
-
 async function transferVested(params: {
   contract: Contract;
   recipient: string;
@@ -72,7 +67,6 @@ async function transferOwnership(params: OwnershipTransfer) {
 export const contractHandlers = {
   connect,
   balanceOf,
-  remainingReserve,
   transferVested,
   transferOwnership,
 };
