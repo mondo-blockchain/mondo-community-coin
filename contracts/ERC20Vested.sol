@@ -25,6 +25,8 @@ contract ERC20Vested is ERC20, Ownable {
 
     using Arrays for uint256[];
 
+    address private _initialAccount;
+
     uint256[] private _vestingDays;
 
     uint256[] private _vestingBasisPoints;
@@ -43,6 +45,7 @@ contract ERC20Vested is ERC20, Ownable {
             vestingDays.length == vestingBasisPoints.length,
             "ERC20Vested: Date array and basis points array have different lengths."
         );
+        _initialAccount = initialAccount;
         _mint(initialAccount, totalSupply);
         _vestingDays = vestingDays;
         _vestingBasisPoints = vestingBasisPoints;
@@ -64,7 +67,7 @@ contract ERC20Vested is ERC20, Ownable {
         );
         _vesting[recipient] = vesting(amount, startDate);
         emit Vesting(recipient, amount, startDate);
-        _transfer(_msgSender(), recipient, amount);
+        _transfer(_initialAccount, recipient, amount);
     }
 
     function _amountAvailable(address from) internal view returns (uint256) {
@@ -116,6 +119,10 @@ contract ERC20Vested is ERC20, Ownable {
         return _amountAvailable(account);
     }
 
+    function remainingReserve() public view virtual returns (uint256) {
+        return super.balanceOf(_initialAccount);
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -130,6 +137,10 @@ contract ERC20Vested is ERC20, Ownable {
                 "ERC20Vested: Only owner is allowed to mint tokens."
             );
         } else {
+            require(
+                _msgSender() != _initialAccount,
+                "ERC20Vested: Initial account is not allowed to transfer tokens."
+            );
             uint256 amountAvailable = _amountAvailable(from);
             require(
                 amountAvailable >= amount,
