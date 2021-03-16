@@ -78,7 +78,18 @@ const func: DeployFunction = async ({ getNamedAccounts, deployments }) => {
       ],
     ],
   });
-  console.log("*** deployed at", deployment.address);
+  console.log("*** MNDCC deployed at", deployment.address);
+
+  const viewDeployment = await deploy("ERC20VestedView", {
+    from: deployer,
+    args: [
+      "vested Mondo Community Coin",
+      "vMNDCC",
+      BASE.mul("180000000"),
+      deployment.address,
+    ],
+  });
+  console.log("*** vMNDCC deployed at", viewDeployment.address);
 };
 
 export default func;

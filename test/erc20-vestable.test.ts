@@ -5,8 +5,12 @@ import add from "date-fns/add";
 import getUnixTime from "date-fns/getUnixTime";
 import { solidity } from "ethereum-waffle";
 import { ethers } from "hardhat";
-import { ERC20Vested, ERC20Vested__factory } from "../typechain";
-import { bn } from "./lib/bn";
+import {
+  ERC20Vested,
+  ERC20VestedView,
+  ERC20VestedView__factory,
+  ERC20Vested__factory,
+} from "../typechain";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -28,6 +32,7 @@ console.log(VESTING_MONTHS);
 console.log(VESTING_BASIS_POINTS);
 
 describe("ERC20Vested", () => {
+  let viewContract: ERC20VestedView;
   let contract: ERC20Vested;
   let owner: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -51,6 +56,19 @@ describe("ERC20Vested", () => {
     );
 
     await contract.deployed();
+
+    const vestedViewFactory = (await ethers.getContractFactory(
+      "ERC20VestedView",
+      owner
+    )) as ERC20VestedView__factory;
+    viewContract = await vestedViewFactory.deploy(
+      "vested Mondo Community Coin",
+      "vMNDCC",
+      INITIAL_OWNER_BALANCE,
+      contract.address
+    );
+
+    await viewContract.deployed();
   };
 
   beforeEach(async () => {
@@ -118,9 +136,18 @@ describe("ERC20Vested", () => {
       it(`should have 0.5% (50 basis points) of ${ethers.utils.formatUnits(
         vestedAmount
       )} as balance`, async () => {
-        const recepientBalance = await contract.balanceOf(account1.address);
+        const recipientBalance = await contract.balanceOf(account1.address);
+        const recipientVestedBalance = await viewContract.balanceOf(
+          account1.address
+        );
+        console.log(
+          "***",
+          ethers.utils.formatUnits(recipientBalance),
+          ethers.utils.formatUnits(recipientVestedBalance)
+        );
+
         expect(
-          recepientBalance,
+          recipientBalance,
           "Recipient should have only free portion as balance"
         ).to.eq(basisPointsOf(vestedAmount, 50));
       });
