@@ -12,7 +12,7 @@ const func: DeployFunction = async ({ getNamedAccounts, deployments }) => {
     // gas: 4000000,
     args: [
       "Mondo Community Coin",
-      "MNDCC",
+      "MndCC",
       BASE.mul("180000000"),
       [
         2592000,
@@ -80,18 +80,18 @@ const func: DeployFunction = async ({ getNamedAccounts, deployments }) => {
       ],
     ],
   });
-  console.log("*** MNDCC deployed at", deployment.address);
+  console.log("*** MndCC deployed at", deployment.address);
 
   const viewDeployment = await deploy("ERC20VestedView", {
     from: deployer,
     args: [
       "vested Mondo Community Coin",
-      "vMNDCC",
+      "vMndCC",
       BASE.mul("180000000"),
       deployment.address,
     ],
   });
-  console.log("*** vMNDCC deployed at", viewDeployment.address);
+  console.log("*** vMndCC deployed at", viewDeployment.address);
 };
 
 export default func;

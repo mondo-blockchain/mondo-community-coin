@@ -128,6 +128,14 @@ describe("ERC20Vested", () => {
         ).to.be.reverted;
       });
     });
+    describe("when receiver is the 0 address", async () => {
+      it("should fail", async () => {
+        const vestedAmount = ONE_TOKEN.mul(1000);
+        expect(
+          contract.transferVested("0", vestedAmount, getUnixTime(new Date()))
+        ).to.be.reverted;
+      });
+    });
     describe("when receiver is owner", async () => {
       it("should fail", async () => {
         const vestedAmount = ONE_TOKEN.mul(1000);
