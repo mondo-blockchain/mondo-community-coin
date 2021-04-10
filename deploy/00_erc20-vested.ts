@@ -44,8 +44,10 @@ const func: DeployFunction = async ({ getNamedAccounts, deployments }) => {
         69984000,
         72576000,
         75168000,
+        77760000,
       ],
       [
+        0,
         50,
         100,
         150,

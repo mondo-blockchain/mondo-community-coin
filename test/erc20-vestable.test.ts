@@ -20,12 +20,12 @@ const ONE_TOKEN = BigNumber.from(1).mul(BASE);
 
 const INITIAL_OWNER_BALANCE = ONE_TOKEN.mul(10000);
 
-const VESTING_MONTHS = new Array(29)
+const VESTING_MONTHS = new Array(30)
   .fill(0)
   .map((_, index) => days((index + 1) * 30));
-const VESTING_BASIS_POINTS = new Array(20)
+const VESTING_BASIS_POINTS = new Array(21)
   .fill(0)
-  .map((_, index) => (index + 1) * 50)
+  .map((_, index) => index * 50)
   .concat(new Array(9).fill(0).map((_, index) => 20 * 50 + (index + 1) * 1000));
 
 console.log(VESTING_MONTHS);
@@ -111,7 +111,23 @@ describe("ERC20Vested", () => {
     });
   });
 
-  describe("vesting", async () => {
+  describe("vested transfer", async () => {
+    describe("when sender is not owner", async () => {
+      beforeEach(async () => {
+        // give none owner some tokens
+        await contract.transfer(account1.address, ONE_TOKEN.mul(10000));
+      });
+      it("should fail", async () => {
+        contract.connect(account1.address);
+        expect(
+          contract.transferVested(
+            account2.address,
+            ONE_TOKEN,
+            getUnixTime(new Date())
+          )
+        ).to.be.reverted;
+      });
+    });
     describe("when receiver is owner", async () => {
       it("should fail", async () => {
         const vestedAmount = ONE_TOKEN.mul(1000);
@@ -130,7 +146,83 @@ describe("ERC20Vested", () => {
         await contract.transferVested(
           account1.address,
           vestedAmount,
-          getUnixTime(new Date())
+          daysFrom(new Date(), 0)
+        );
+      });
+      it(`should have no balance (0% of vested amount)`, async () => {
+        const recipientBalance = await contract.balanceOf(account1.address);
+
+        expect(
+          recipientBalance,
+          "Recipient should have only free portion as balance"
+        ).to.eq(0);
+      });
+    });
+    describe("when receiver is vested starting 25 days ago", async () => {
+      const vestedAmount = ONE_TOKEN.mul(1000);
+      beforeEach(async () => {
+        await contract.transferVested(
+          account1.address,
+          vestedAmount,
+          daysFrom(new Date(), -25)
+        );
+      });
+      it(`should have no balance (0% of vested amount)`, async () => {
+        const recipientBalance = await contract.balanceOf(account1.address);
+
+        expect(
+          recipientBalance,
+          "Recipient should have only free portion as balance"
+        ).to.eq(0);
+      });
+    });
+    describe("when receiver is vested starting 29 months (à 30 days) ago", async () => {
+      const vestedAmount = ONE_TOKEN.mul(1000);
+      beforeEach(async () => {
+        await contract.transferVested(
+          account1.address,
+          vestedAmount,
+          daysFrom(new Date(), -(30 * 29))
+        );
+      });
+      it(`should have 90% (9000 basis points) of ${ethers.utils.formatUnits(
+        vestedAmount
+      )} as balance`, async () => {
+        const recipientBalance = await contract.balanceOf(account1.address);
+
+        expect(
+          recipientBalance,
+          "Recipient should have only free portion as balance"
+        ).to.eq(basisPointsOf(vestedAmount, 9000));
+      });
+    });
+    describe("when receiver is vested starting 29 months (à 30 days) + 1 day ago", async () => {
+      const vestedAmount = ONE_TOKEN.mul(1000);
+      beforeEach(async () => {
+        await contract.transferVested(
+          account1.address,
+          vestedAmount,
+          daysFrom(new Date(), -(30 * 29 + 1))
+        );
+      });
+      it(`should have 100% of ${ethers.utils.formatUnits(
+        vestedAmount
+      )} as balance`, async () => {
+        const recipientBalance = await contract.balanceOf(account1.address);
+
+        expect(
+          recipientBalance,
+          "Recipient should have only free portion as balance"
+        ).to.eq(vestedAmount);
+      });
+    });
+    describe("when receiver is vested starting 31 days ago", async () => {
+      const vestedAmount = ONE_TOKEN.mul(1000);
+      beforeEach(async () => {
+        await contract.transferVested(
+          account1.address,
+          vestedAmount,
+          daysFrom(new Date(), -31)
         );
       });
       it(`should have 0.5% (50 basis points) of ${ethers.utils.formatUnits(
@@ -140,16 +232,15 @@ describe("ERC20Vested", () => {
         const recipientVestedBalance = await viewContract.balanceOf(
           account1.address
         );
-        console.log(
-          "***",
-          ethers.utils.formatUnits(recipientBalance),
-          ethers.utils.formatUnits(recipientVestedBalance)
-        );
 
         expect(
           recipientBalance,
           "Recipient should have only free portion as balance"
         ).to.eq(basisPointsOf(vestedAmount, 50));
+        expect(
+          recipientVestedBalance,
+          "Recipient should have vested amount as balance of view contract"
+        ).to.eq(vestedAmount);
       });
       it("should be able to transfer entire free balance", async () => {
         const senderBalanceBeforeTransfer = await contract.balanceOf(
@@ -174,10 +265,21 @@ describe("ERC20Vested", () => {
         const additionalFreeTokens = ONE_TOKEN.mul(20);
         await contract.transfer(account1.address, additionalFreeTokens);
         const recepientBalance = await contract.balanceOf(account1.address);
+        await contract
+          .connect(account1)
+          .transfer(account2.address, recepientBalance);
+        const recepientBalanceAfterTransfer = await contract.balanceOf(
+          account1.address
+        );
+
         expect(
           recepientBalance,
           "Recipient should have free portion of vested amount and the additional amount received as balance"
         ).to.eq(basisPointsOf(vestedAmount, 50).add(additionalFreeTokens));
+        expect(
+          recepientBalanceAfterTransfer,
+          "Recipient should have transfered entire free balance"
+        ).to.eq(0);
       });
       it("should not be able to transfer more than free balance", async () => {
         const amountSlightlyAboveFreeBalance = basisPointsOf(
@@ -241,6 +343,10 @@ describe("ERC20Vested", () => {
 
 function days(days: number) {
   return getUnixTime(add(0, { days }));
+}
+
+function daysFrom(date: Date, days: number) {
+  return getUnixTime(add(date, { days }));
 }
 
 function basisPointsOf(
