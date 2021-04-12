@@ -4,6 +4,10 @@
 
 `npm install`
 
+## Compile
+
+`npm run compile`
+
 ### Run Contract Tests
 
 `npm test`
