@@ -39,6 +39,10 @@ const config: HardhatUserConfig = {
       url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
       accounts,
     },
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
+      accounts,
+    },
     coverage: {
       url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
     },

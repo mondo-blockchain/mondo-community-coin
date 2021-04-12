@@ -1,7 +1,7 @@
 {
-  "name": "solidity-ts-dev-stack-example",
-  "version": "0.0.2",
-  "description": "",
+  "name": "mndcc",
+  "version": "1.0.0",
+  "description": "Mondo Community Coin",
   "main": "index.js",
   "scripts": {
     "build": "npm run clean && npm run compile",
